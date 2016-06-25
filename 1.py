@@ -50,6 +50,10 @@ class UTNode(UNode):
 class UTree:
     def __init__(self):
         self.root = None
+        self.maxf = -1
+        self.minf = 1E06
+        self.maxw = -1
+        self.minw = 1E06
 
     def search(self, z):
         x = self.root
@@ -111,6 +115,27 @@ class UTree:
             b.left = a.right
             b.left.p = b
 
+    def traverse(self, node):
+        if node.left != None :
+            self.traverse(node.left)
+        if node.fcnt > self.maxf :
+            self.maxf = node.fcnt
+        if node.fcnt < self.minf :
+            self.minf = node.fcnt
+        if node.wcnt > self.maxw :
+            self.maxw = node.wcnt
+        if node.wcnt < self.minw :
+            self.minw = node.wcnt
+        if node.right != None :
+            self.traverse(node.right)
+
+    def listtraverse(self, C, node):
+        if node.left != None :
+            self.listtraverse(C, node.left)
+        C.append(node)
+        if node.right != None :
+            self.listtraverse(C, node.right)
+
 
 class FNode:
     def __init__(self):
@@ -126,9 +151,10 @@ class FNode:
 
 class WNode:
     def __init__(self):
-        self.v = ""
+        self.v = None
         self.hash = 0
         self.user = 0
+        self.wno = 0
         self.next = None
         self.prev = None
         self.down = None
@@ -137,8 +163,12 @@ class WNode:
         self.v = v
         m = 0
         for c in v:
-            m = m + ord(c)
-        self.hash = m % 100
+            if ord(c) == 10 :
+                pass
+            else :
+                m = m + ord(c)
+        m = m % 100
+        self.hash = m
         self.user = user
 
 
@@ -151,35 +181,108 @@ class WHT:
 
     def search(self, v):
         m = 0
-        for c in v :
-            m = m + ord(c)
-        m = m % 100
-        a = self.list[m].next
-        while a :
-            if a.v == v :
-                return a
+        for c in v:
+            if ord(c) == 10 :
+                pass
             else :
-                a = a.next
-        return -1
+                m = m + ord(c)
+        m = m % 100
+        print (m)
+        a = self.list[m].next
+        print(a.hash)
+        print(a.next.v) #
+        while (a.next) and (v + "\n" != a.v) :
+            a = a.next
+        print (a.prev.v)
+        print (a.next.v)
 
     def add(self, node):
         a = self.list[node.hash]
-        while (a) and (node.v == a.v) :
+        while (a.next) and (node.v != a.v) :
             a = a.next
         if a.v == node.v :
             b = a.down
             while b :
                 b = b.down
             b = node # order correct?
+            a.wno = a.wno + 1
         else :
             a.next = node
             node.prev = a
+            node.wno = node.wno + 1
 
     def delete(self, v):
         a = self.search(v)
         a.next.prev = a.prev
         a.prev.next = a.next
 
+    def lklsttraverse(self, C):
+        for i in range (0, 100) :
+            a = self.list[i].next
+            while a :
+                C.append(a)
+                a = a.next
+
+
+# Functions
+
+def mergew(tmp, A, p, q, r):
+    for i in range(p, r):
+        tmp[i] = A[i]
+    i = p
+    j = q
+    while i < q and j < r:
+        if tmp[i].wno > tmp[j].wno:
+            A[p] = tmp[i]
+            i = i + 1
+        else:
+            A[p] = tmp[j]
+            j = j + 1
+        p = p + 1
+    while i < q:
+        A[p] = tmp[i]
+        i = i + 1
+        p = p + 1
+    while j < r:
+        A[p] = tmp[j]
+        j = j + 1
+        p = p + 1
+
+def mergesortw(tmp, A, p, r):
+    if p < r - 1:
+        q = (p + r) // 2
+        mergesortw(tmp, A, p, q)
+        mergesortw(tmp, A, q, r)
+        mergew(tmp, A, p, q, r)
+
+def mergeu(tmp, A, p, q, r):
+    for i in range(p, r):
+        tmp[i] = A[i]
+    i = p
+    j = q
+    while i < q and j < r:
+        if tmp[i].wcnt > tmp[j].wcnt:
+            A[p] = tmp[i]
+            i = i + 1
+        else:
+            A[p] = tmp[j]
+            j = j + 1
+        p = p + 1
+    while i < q:
+        A[p] = tmp[i]
+        i = i + 1
+        p = p + 1
+    while j < r:
+        A[p] = tmp[j]
+        j = j + 1
+        p = p + 1
+
+def mergesortu(tmp, A, p, r):
+    if p < r - 1:
+        q = (p + r) // 2
+        mergesortu(tmp, A, p, q)
+        mergesortu(tmp, A, q, r)
+        mergeu(tmp, A, p, q, r)
 
 # Interface
 while True:
@@ -212,7 +315,7 @@ while True:
                 line = line[0:-1]
             for i in range(0, len(lines)-1, 4):
                 node = UTNode()
-                node.set(lines[i], lines[i+2])
+                node.set(int(lines[i]), lines[i+2])
                 A.insert(node)
                 cnt_u = cnt_u + 1
 
@@ -223,7 +326,7 @@ while True:
                 line = line[0:-1]
             for i in range(0, len(lines)-1, 3):
                 node = FNode()
-                node.set(lines[i], lines[i+1])
+                node.set(int(lines[i]), int(lines[i+1]))
                 a = A.search(node.n)
                 a.Fadd(node)
                 b = A.search(node.v)
@@ -239,6 +342,8 @@ while True:
             for i in range(0, len(lines)-1, 4) :
                 node = WNode()
                 node.set(lines[i+2], int(lines[i]))
+                a = A.search(node.user)
+                a.wcnt = a.wcnt + 1
                 B.add(node)
                 cnt_w = cnt_w + 1
 
@@ -246,5 +351,36 @@ while True:
         print("Total friendships records ", int(cnt_f))
         print("Total tweets : ", int(cnt_w))
 
-    elif Menu_Input == 1 :
-        
+    if Menu_Input == 1 :
+        A.traverse(A.root)
+        print ("Average number of friends : ", round(int(cnt_f) / int(cnt_u))) # 2 Errors, 2 Warnings
+        print ("Minimum friends : ", A.minf)
+        print ("Maximum number of friends : ", A.maxf)
+        print ("\nAverage tweets per user : ", round(int(cnt_w) / int(cnt_u)))
+        print ("Minimum tweets per user : ", A.minw)
+        print ("Maximum tweets per user : ", A.maxw)
+
+    if Menu_Input == 2 :
+        C = []
+        B.lklsttraverse(C)
+        tmp = C[:]
+        mergesortw(tmp, C, 0, len(C))
+        for i in range (0,5) :
+            print ("\nTweet : ", C[i].v, "Count : ", C[i].wno)
+
+    if Menu_Input == 3 :
+        D = []
+        A.listtraverse(D, A.root)
+        tmp = D[:]
+        mergesortu(tmp, D, 0, len(D))
+        for i in range (0,5) :
+            print ("User ID : ", D[i].n)
+            print ("User Name : ", D[i].name)
+
+    if Menu_Input == 4 :
+        k = input("Put the word that you want to find : ")
+        B.search(k)
+        print (a.user)
+        while a.down :
+            print (a.down.user)
+            a = a.down
