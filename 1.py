@@ -179,7 +179,7 @@ class WHT:
             node = WNode()
             self.list.append(node)
 
-    def search(self, v):
+    def search(self, v, a):
         m = 0
         for c in v:
             if ord(c) == 10 :
@@ -191,9 +191,11 @@ class WHT:
         a = self.list[m].next
         print(a.hash)
         print(a.next.v) #
-        while (a.next) and (v + "\n" != a.v) :
+        while (a.next) and ((v + "\n") != a.v) :
             a = a.next
+        return a
         print (a.prev.v)
+        print (a.v)
         print (a.next.v)
 
     def add(self, node):
@@ -202,9 +204,12 @@ class WHT:
             a = a.next
         if a.v == node.v :
             b = a.down
-            while b :
-                b = b.down
-            b = node # order correct?
+            if b is None :
+                b = node
+            else:
+                while b.down is None :
+                    b = b.down
+                b.down = node
             a.wno = a.wno + 1
         else :
             a.next = node
@@ -353,7 +358,7 @@ while True:
 
     if Menu_Input == 1 :
         A.traverse(A.root)
-        print ("Average number of friends : ", round(int(cnt_f) / int(cnt_u))) # 2 Errors, 2 Warnings
+        print ("Average number of friends : ", round(int(cnt_f) / int(cnt_u)))
         print ("Minimum friends : ", A.minf)
         print ("Maximum number of friends : ", A.maxf)
         print ("\nAverage tweets per user : ", round(int(cnt_w) / int(cnt_u)))
@@ -379,8 +384,12 @@ while True:
 
     if Menu_Input == 4 :
         k = input("Put the word that you want to find : ")
-        B.search(k)
+        a = WNode()
+        a = B.search(k, a)
         print (a.user)
         while a.down :
             print (a.down.user)
             a = a.down
+
+    if Menu_Input == 99 :
+        break
